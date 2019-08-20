@@ -1,83 +1,78 @@
 package de.ckraus.services.client.executors;
 
-import org.springframework.http.HttpStatus;
-import org.springframework.http.ResponseEntity;
-
 import java.util.Map;
 
 /**
  *
- * @param <I> RequestEntity Bean
- * @param <O> ResponseEntity Type
+ * @param <O> Response Bean
  */
-public interface ServiceExecutor<I, O> {
+public interface ServiceExecutor<O> {
 
     /**
-     * callService
+     *
      * @return
      */
-    ResponseEntity<O> callService();
+    Map<String, Object> getParams();
 
     /**
-     * execute
-     * @param mapContainerParams
-     * @param <T>
+     *
      * @return
      */
-    <T> T execute( Map<String, ?> mapContainerParams );
+    O getResponseEntity();
 
     /**
-     * getContainerParams
+     *
      * @return
      */
-    Map<String, Object> getContainerParams();
+    Class<O> getResponseType();
 
     /**
-     * getHttpStatus
-     * @return
-     */
-    HttpStatus getHttpStatus();
-
-    /**
-     * getServiceArgs
+     *
      * @return
      */
     Object[] getServiceArgs();
 
     /**
-     * isExecuted
+     *
+     * @return
+     */
+    Throwable getThrowable();
+
+    /**
+     *
      * @return
      */
     boolean isExecuted();
 
     /**
-     * isExecuteSuccessfully
+     *
      * @return
      */
-    boolean isExecuteSuccessfully();
+    boolean isFailed();
 
     /**
-     * isReallyPerformService
+     *
      * @return
      */
     boolean isReallyPerformService();
 
     /**
-     * getRequestEntityBean
+     *
      * @return
      */
-    I getRequestEntityBean();
+    O callService();
 
     /**
-     * getResponseEntityBean
+     *
      * @return
      */
-    O getResponseEntityBean();
+    <T> T execute();
 
     /**
-     * getResponseEntityType
+     *
+     * @param mapContainerParams
      * @return
      */
-    Class<O> getResponseEntityType();
+    <T> T execute( Map<String, Object> mapContainerParams );
 
 }

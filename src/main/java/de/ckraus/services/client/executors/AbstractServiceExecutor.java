@@ -3,151 +3,132 @@ package de.ckraus.services.client.executors;
 import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.Setter;
-import lombok.experimental.Tolerate;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.web.client.HttpServerErrorException;
+import org.springframework.web.client.RestClientException;
 
 import java.util.Map;
 
-/**
- *
- * @param <I> RequestEntity Bean
- * @param <O> ResponseEntity Type
- */
 @Getter
-@Setter( AccessLevel.PROTECTED )
-@SuppressWarnings({"WeakerAccess"})
-public abstract class AbstractServiceExecutor<I, O> implements ServiceExecutor<I, O> {
+@Setter( AccessLevel.PROTECTED)
+public abstract class AbstractServiceExecutor<O> implements ServiceExecutor<O> {
 
-    private Map<String, Object> containerParams;
+    private Map<String, Object> params;
     private boolean executed;
-    private boolean executedSuccessfully;
-    private HttpStatus httpStatus;
-    private I requestEntityBean;
-    private O responseEntityBean;
+    private boolean failed;
+    private O responseEntity;
+    private Class<O> responseType;
     private Object[] serviceArgs;
+    private Throwable throwable;
 
     /**
-     * init
+     *
+     * @param mapContainerParams
      */
-    protected void init( Map<String, ?> mapContainerParams ) {
+    protected void init( Map<String, Object> mapContainerParams ) {
         this.reset();
+
+        this.setParams( mapContainerParams );
     }
 
     /**
-     * reset
+     *
      */
     protected void reset() {
-        this.setContainerParams(null);
+        this.setParams(null);
         this.setExecuted(false);
-        this.setExecutedSuccessfully(false);
-        this.setHttpStatus( ( HttpStatus ) null);
-        this.setRequestEntityBean(null);
-        this.setRequestEntityBean(null);
+        this.setFailed(false);
+        this.setResponseEntity(null);
         this.setServiceArgs(null);
+        this.setThrowable(null);
+    }
+
+    @Override
+    public boolean isReallyPerformService() {
+        return (!this.isExecuted());
     }
 
     /**
-     * execute
+     *
+     * @param <T>
+     * @return
+     */
+    @Override
+    public <T> T execute() {
+        return this.execute(null);
+    }
+
+    /**
+     *
      * @param mapContainerParams
      * @param <T>
      * @return
      */
-    public <T> T execute( Map<String, ?> mapContainerParams ) {
+    public <T> T execute( Map<String, Object> mapContainerParams ) {
         this.init(mapContainerParams);
 
         T t = null;
 
+        O oResponseEntity;
+
         if ( this.isReallyPerformService() ) {
-            ResponseEntity<O> responseEntity = this.callService();
+            try {
+                oResponseEntity = this.callService();
+            } catch ( HttpServerErrorException hsee ) {
+                oResponseEntity = new ResponseEntity<>( null, hsee.getStatusCode() );
+                this.setThrowable(hsee);
+                hsee.printStackTrace();
+                // TODO
+            } catch ( RestClientException rce ) {
+                oResponseEntity = new ResponseEntity<>( null, HttpStatus.NOT_ACCEPTABLE );
+                this.setThrowable(rce);
+                rce.printStackTrace();
+                // TODO
+            }
 
             // set Execution Flag
             this.setExecuted( true );
 
             // set HttpStatus
-            this.setHttpStatus(responseEntity);
+            this.setHttpStatus(oResponseEntity);
 
-            // set Execution status
-            this.setExecutedSuccessfully( this.getHttpStatus() );
+            // set ResponseEntity Bean
+            this.setResponseEntity(oResponseEntity);
+
+            // set Execution status by occured exception or returned HttpStatus
+            if ( ( this.isExecuted() )
+                    && ( null != this.getThrowable() ) ) {
+
+                this.setFailed( Boolean.TRUE );
+            }
+            else {
+                this.setFailed( this.getHttpStatus() );
+            }
 
             // handle Service Response
             t = handleServiceResponse();
 
-            // store ResponseEntity Bean to Scope
+            // at least (after handleServiceResponse) store ResponseEntity Bean to scope
             this.storeResponseEntityBean();
         }
         return t;
     }
 
-    @Tolerate
-    protected void setExecutedSuccessfully( HttpStatus httpStatus ) {
-        boolean bIsExecutedSuccessfully = false;
-
-        if (null == httpStatus) {
-            httpStatus = HttpStatus.SERVICE_UNAVAILABLE;
-        }
-
-        if (httpStatus.is1xxInformational()) {
-            bIsExecutedSuccessfully = true;
-        }
-        else
-        if (httpStatus.is2xxSuccessful()) {
-            bIsExecutedSuccessfully = true;
-        }
-        else
-        if (httpStatus.is3xxRedirection()) {
-            bIsExecutedSuccessfully = true;
-        }
-        else
-        if (httpStatus.is4xxClientError()) {
-            bIsExecutedSuccessfully = false;
-        }
-        else
-        if (httpStatus.is5xxServerError()) {
-            bIsExecutedSuccessfully = false;
-        }
-        else {
-            bIsExecutedSuccessfully = false;
-        }
-
-        this.setExecutedSuccessfully( bIsExecutedSuccessfully );
-    }
-
-    @Tolerate
-    protected void setHttpStatus(ResponseEntity<O> responseEntity) {
-        if (null == responseEntity) {
-
-        }
-        else {
-            HttpStatus httpStatus = responseEntity.getStatusCode();
-
-            if (null == httpStatus) {
-
-            }
-            else {
-                this.setHttpStatus( httpStatus );
-            }
-        }
-    }
-
-    protected abstract <T> T handleServiceResponse();
-
     /**
-     * isReallyPerformService
-     * @return
-     */
-    public boolean isReallyPerformService() {
-        return ( !this.isExecuted() );
-    }
-
-    /**
-     * storeResponseEntityBean
+     *
      */
     public void storeResponseEntityBean() {
-        if ( this.isExecuted()
-                && this.isExecutedSuccessfully() ) {
-
-
+        if ( !this.isFailed() ) {
+            // TODO
         }
     }
+
+    /**
+     * TODO
+     * @param <T>
+     * @return
+     */
+    protected abstract <T> T handleServiceResponse();
+
 }
