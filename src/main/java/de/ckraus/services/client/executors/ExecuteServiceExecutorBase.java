@@ -13,7 +13,7 @@ import org.springframework.web.client.ResponseExtractor;
  */
 @Getter
 @Setter( AccessLevel.PROTECTED)
-public abstract class AbstractExecuteServiceExecutor<O> extends AbstractServiceExecutor<O> implements
+public abstract class ExecuteServiceExecutorBase<O> extends ServiceExecutorBase<O> implements
         ExecuteServiceExecutor<O> {
 
     @Setter(AccessLevel.NONE)
@@ -26,7 +26,7 @@ public abstract class AbstractExecuteServiceExecutor<O> extends AbstractServiceE
      * Constructor
      * @param httpMethod
      */
-    public AbstractExecuteServiceExecutor(HttpMethod httpMethod) {
+    public ExecuteServiceExecutorBase( HttpMethod httpMethod) {
         this.httpMethod = httpMethod;
     }
 

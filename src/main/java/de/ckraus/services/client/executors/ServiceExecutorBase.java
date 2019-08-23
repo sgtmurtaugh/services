@@ -14,7 +14,7 @@ import java.util.Map;
 
 @Getter
 @Setter( AccessLevel.PROTECTED)
-public abstract class AbstractServiceExecutor<O> implements ServiceExecutor<O> {
+public abstract class ServiceExecutorBase<O> implements ServiceExecutor<O> {
 
     private Map<String, Object> params;
     private boolean executed;

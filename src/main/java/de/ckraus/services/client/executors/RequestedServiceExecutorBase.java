@@ -13,7 +13,7 @@ import java.util.Map;
  */
 @Getter
 @Setter( AccessLevel.PROTECTED)
-public abstract class AbstractRequestedServiceExecutor<I, O> extends AbstractServiceExecutor<O> implements
+public abstract class RequestedServiceExecutorBase<I, O> extends ServiceExecutorBase<O> implements
         RequestedServiceExecutor<I, O> {
 
     private I requestObject;

@@ -3,7 +3,7 @@ package de.ckraus.services.client.executors;
 /**
  *
  */
-public abstract class AbstractResponselessServiceExecutor extends AbstractServiceExecutor<Void> implements
+public abstract class ResponselessServiceExecutorBase extends ServiceExecutorBase<Void> implements
         ResponselessServiceExecutor {
 
 

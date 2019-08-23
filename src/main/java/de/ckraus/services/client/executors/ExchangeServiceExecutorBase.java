@@ -12,7 +12,7 @@ import org.springframework.http.HttpMethod;
  */
 @Getter
 @Setter( AccessLevel.PROTECTED)
-public abstract class AbstractExchangeServiceExecutor<I, O> extends AbstractRequestedServiceExecutor<I, O> implements
+public abstract class ExchangeServiceExecutorBase<I, O> extends RequestedServiceExecutorBase<I, O> implements
         ExchangeServiceExecutor<I, O> {
 
     @Setter(AccessLevel.NONE)
@@ -22,7 +22,7 @@ public abstract class AbstractExchangeServiceExecutor<I, O> extends AbstractRequ
      * Constructor
      * @param httpMethod
      */
-    public AbstractExchangeServiceExecutor(HttpMethod httpMethod) {
+    public ExchangeServiceExecutorBase( HttpMethod httpMethod) {
         this.httpMethod = httpMethod;
     }
 
