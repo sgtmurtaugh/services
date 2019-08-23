@@ -1,8 +1,10 @@
 package de.ckraus.services.client.executors;
 
+import de.ckraus.services.ServiceUtils;
 import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.Setter;
+import lombok.experimental.Tolerate;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.client.HttpServerErrorException;
@@ -17,36 +19,35 @@ public abstract class AbstractServiceExecutor<O> implements ServiceExecutor<O> {
     private Map<String, Object> params;
     private boolean executed;
     private boolean failed;
+    private HttpStatus httpStatus;
     private O responseEntity;
     private Class<O> responseType;
     private Object[] serviceArgs;
     private Throwable throwable;
 
-    /**
-     *
-     * @param mapContainerParams
-     */
-    protected void init( Map<String, Object> mapContainerParams ) {
-        this.reset();
-
-        this.setParams( mapContainerParams );
+    @Tolerate
+    protected void setFailed( HttpStatus httpStatus ) {
+        this.setFailed( ServiceUtils.isExecutedSuccessfully( httpStatus ) );
     }
 
-    /**
-     *
-     */
-    protected void reset() {
-        this.setParams(null);
-        this.setExecuted(false);
-        this.setFailed(false);
-        this.setResponseEntity(null);
-        this.setServiceArgs(null);
-        this.setThrowable(null);
-    }
-
-    @Override
-    public boolean isReallyPerformService() {
-        return (!this.isExecuted());
+    @Tolerate
+    protected void setHttpStatus( O oResponseEntity ) {
+        if (null == responseEntity) {
+            this.setHttpStatus( HttpStatus.NO_CONTENT );
+        }
+        else
+        if (responseEntity instanceof Void) {
+            this.setHttpStatus( HttpStatus.OK );
+        }
+        else
+        if (responseEntity instanceof ResponseEntity ) {
+            this.setHttpStatus(
+                    ((ResponseEntity) responseEntity).getStatusCode()
+            );
+        }
+        else {
+            this.setHttpStatus( HttpStatus.OK );
+        }
     }
 
     /**
@@ -70,41 +71,10 @@ public abstract class AbstractServiceExecutor<O> implements ServiceExecutor<O> {
 
         T t = null;
 
-        O oResponseEntity;
-
         if ( this.isReallyPerformService() ) {
-            try {
-                oResponseEntity = this.callService();
-            } catch ( HttpServerErrorException hsee ) {
-                oResponseEntity = new ResponseEntity<>( null, hsee.getStatusCode() );
-                this.setThrowable(hsee);
-                hsee.printStackTrace();
-                // TODO
-            } catch ( RestClientException rce ) {
-                oResponseEntity = new ResponseEntity<>( null, HttpStatus.NOT_ACCEPTABLE );
-                this.setThrowable(rce);
-                rce.printStackTrace();
-                // TODO
-            }
 
-            // set Execution Flag
-            this.setExecuted( true );
-
-            // set HttpStatus
-            this.setHttpStatus(oResponseEntity);
-
-            // set ResponseEntity Bean
-            this.setResponseEntity(oResponseEntity);
-
-            // set Execution status by occured exception or returned HttpStatus
-            if ( ( this.isExecuted() )
-                    && ( null != this.getThrowable() ) ) {
-
-                this.setFailed( Boolean.TRUE );
-            }
-            else {
-                this.setFailed( this.getHttpStatus() );
-            }
+            // handle Execution individually
+            this.handleExecution();
 
             // handle Service Response
             t = handleServiceResponse();
@@ -118,9 +88,41 @@ public abstract class AbstractServiceExecutor<O> implements ServiceExecutor<O> {
     /**
      *
      */
-    public void storeResponseEntityBean() {
-        if ( !this.isFailed() ) {
-            // TODO
+    protected void handleExecution() {
+        O oResponseEntity = null;
+
+        try {
+            oResponseEntity = this.callService();
+
+            // set HttpStatus
+            this.setHttpStatus(oResponseEntity);
+        } catch ( HttpServerErrorException hsee ) {
+            // set HttpStatus
+            this.setHttpStatus(hsee.getStatusCode());
+            this.setThrowable(hsee);
+
+        } catch ( RestClientException rce ) {
+            // set HttpStatus
+            this.setHttpStatus(HttpStatus.INTERNAL_SERVER_ERROR);
+            this.setThrowable(rce);
+
+        }
+        finally {
+            // set ResponseEntity Bean
+            this.setResponseEntity(oResponseEntity);
+        }
+
+        // set Execution Flag
+        this.setExecuted( true );
+
+        // set Execution status by occured exception or returned HttpStatus
+        if ( ( this.isExecuted() )
+                && ( null != this.getThrowable() ) ) {
+
+            this.setFailed( Boolean.TRUE );
+        }
+        else {
+            this.setFailed( this.getHttpStatus() );
         }
     }
 
@@ -130,5 +132,42 @@ public abstract class AbstractServiceExecutor<O> implements ServiceExecutor<O> {
      * @return
      */
     protected abstract <T> T handleServiceResponse();
+
+    /**
+     *
+     * @param mapContainerParams
+     */
+    protected void init( Map<String, Object> mapContainerParams ) {
+        this.reset();
+
+        this.setParams( mapContainerParams );
+    }
+
+    @Override
+    public boolean isReallyPerformService() {
+        return (!this.isExecuted());
+    }
+
+    /**
+     *
+     */
+    protected void reset() {
+        this.setParams(null);
+        this.setExecuted(false);
+        this.setFailed(false);
+        this.setHttpStatus((HttpStatus ) null);
+        this.setResponseEntity(null);
+        this.setServiceArgs(null);
+        this.setThrowable(null);
+    }
+
+    /**
+     *
+     */
+    public void storeResponseEntityBean() {
+        if ( !this.isFailed() ) {
+            // TODO
+        }
+    }
 
 }

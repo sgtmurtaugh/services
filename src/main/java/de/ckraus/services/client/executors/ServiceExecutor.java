@@ -1,5 +1,7 @@
 package de.ckraus.services.client.executors;
 
+import org.springframework.http.HttpStatus;
+
 import java.util.Map;
 
 /**
@@ -7,6 +9,32 @@ import java.util.Map;
  * @param <O> Response Bean
  */
 public interface ServiceExecutor<O> {
+
+
+    /**
+     *
+     * @return
+     */
+    O callService();
+
+    /**
+     *
+     * @return
+     */
+    <T> T execute();
+
+    /**
+     *
+     * @param mapContainerParams
+     * @return
+     */
+    <T> T execute( Map<String, Object> mapContainerParams );
+
+    /**
+     *
+     * @return
+     */
+    HttpStatus getHttpStatus();
 
     /**
      *
@@ -55,24 +83,5 @@ public interface ServiceExecutor<O> {
      * @return
      */
     boolean isReallyPerformService();
-
-    /**
-     *
-     * @return
-     */
-    O callService();
-
-    /**
-     *
-     * @return
-     */
-    <T> T execute();
-
-    /**
-     *
-     * @param mapContainerParams
-     * @return
-     */
-    <T> T execute( Map<String, Object> mapContainerParams );
 
 }
